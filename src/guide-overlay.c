@@ -1,9 +1,3 @@
-/*
- * obs-guide-overlay — Guias de composição para OBS
- * Renderiza linhas usando gs_render_start/gs_render_stop (GS_TRIS)
- * sem depender de textura — funciona no Mac com Metal/OpenGL.
- */
-
 #include <obs-module.h>
 #include <obs-frontend-api.h>
 #include <graphics/graphics.h>
@@ -20,6 +14,9 @@ OBS_MODULE_USE_DEFAULT_LOCALE("obs-guide-overlay", "en-US")
 #define PROP_COLOR         "line_color"
 #define PROP_OPACITY       "opacity"
 #define PROP_THICKNESS     "thickness"
+
+/* Estado global — atualizado pelo callback de evento */
+static volatile bool g_output_active = false;
 
 typedef struct {
 	bool     preview_only;
@@ -46,17 +43,37 @@ static void get_vec4(guide_data_t *d, struct vec4 *out)
 static void draw_hline(float x0, float x1, float y, float half)
 {
 	gs_render_start(false);
-	gs_vertex2f(x0, y - half); gs_vertex2f(x1, y - half); gs_vertex2f(x1, y + half);
-	gs_vertex2f(x0, y - half); gs_vertex2f(x1, y + half); gs_vertex2f(x0, y + half);
+	gs_vertex2f(x0, y-half); gs_vertex2f(x1, y-half); gs_vertex2f(x1, y+half);
+	gs_vertex2f(x0, y-half); gs_vertex2f(x1, y+half); gs_vertex2f(x0, y+half);
 	gs_render_stop(GS_TRIS);
 }
 
 static void draw_vline(float x, float y0, float y1, float half)
 {
 	gs_render_start(false);
-	gs_vertex2f(x - half, y0); gs_vertex2f(x + half, y0); gs_vertex2f(x + half, y1);
-	gs_vertex2f(x - half, y0); gs_vertex2f(x + half, y1); gs_vertex2f(x - half, y1);
+	gs_vertex2f(x-half, y0); gs_vertex2f(x+half, y0); gs_vertex2f(x+half, y1);
+	gs_vertex2f(x-half, y0); gs_vertex2f(x+half, y1); gs_vertex2f(x-half, y1);
 	gs_render_stop(GS_TRIS);
+}
+
+/* Callback chamado pelo OBS quando eventos acontecem */
+static void frontend_event_cb(enum obs_frontend_event event, void *private_data)
+{
+	UNUSED_PARAMETER(private_data);
+	switch (event) {
+	case OBS_FRONTEND_EVENT_RECORDING_STARTED:
+	case OBS_FRONTEND_EVENT_STREAMING_STARTED:
+	case OBS_FRONTEND_EVENT_VIRTUALCAM_STARTED:
+		g_output_active = true;
+		break;
+	case OBS_FRONTEND_EVENT_RECORDING_STOPPED:
+	case OBS_FRONTEND_EVENT_STREAMING_STOPPED:
+	case OBS_FRONTEND_EVENT_VIRTUALCAM_STOPPED:
+		g_output_active = false;
+		break;
+	default:
+		break;
+	}
 }
 
 static const char *guide_get_name(void *unused)
@@ -99,11 +116,8 @@ static void guide_render(void *data, gs_effect_t *effect)
 	UNUSED_PARAMETER(effect);
 	guide_data_t *d = data;
 
-	/* Esconde durante gravação ou stream se preview_only estiver marcado */
-	if (d->preview_only) {
-		if (obs_frontend_recording_active() || obs_frontend_streaming_active())
-			return;
-	}
+	if (d->preview_only && g_output_active)
+		return;
 
 	float W    = (float)d->cx;
 	float H    = (float)d->cy;
@@ -186,11 +200,13 @@ static struct obs_source_info guide_source_info = {
 bool obs_module_load(void)
 {
 	obs_register_source(&guide_source_info);
+	obs_frontend_add_event_callback(frontend_event_cb, NULL);
 	blog(LOG_INFO, "obs-guide-overlay carregado");
 	return true;
 }
 
 void obs_module_unload(void)
 {
+	obs_frontend_remove_event_callback(frontend_event_cb, NULL);
 	blog(LOG_INFO, "obs-guide-overlay descarregado");
 }
