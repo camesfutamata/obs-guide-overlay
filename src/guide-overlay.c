@@ -98,6 +98,13 @@ static void guide_render(void *data, gs_effect_t *effect)
 {
 	UNUSED_PARAMETER(effect);
 	guide_data_t *d = data;
+
+	/* Esconde durante gravação ou stream se preview_only estiver marcado */
+	if (d->preview_only) {
+		if (obs_frontend_recording_active() || obs_frontend_streaming_active())
+			return;
+	}
+
 	float W    = (float)d->cx;
 	float H    = (float)d->cy;
 	float half = (d->thickness > 0 ? d->thickness : 2) * 0.5f;
