@@ -1,26 +1,21 @@
-cmake_minimum_required(VERSION 3.16...3.26)
-
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCOPE)
-
+cmake_minimum_required(VERSION 3.16)
 project(obs-guide-overlay VERSION 1.0.0)
 
-include(compilerconfig)
-include(defaults)
-include(helpers)
+set(CMAKE_C_STANDARD 11)
 
-add_library(${CMAKE_PROJECT_NAME} MODULE)
+add_library(obs-guide-overlay MODULE src/guide-overlay.c)
 
-find_package(libobs REQUIRED)
-find_package(obs-frontend-api REQUIRED)
-
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/guide-overlay.c)
-
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
-    OBS::libobs
-    OBS::obs-frontend-api
+target_include_directories(obs-guide-overlay PRIVATE
+    ${LIBOBS_INCLUDE_DIR}
+    ${LIBOBS_INCLUDE_DIR}/../UI/obs-frontend-api
 )
 
-set_target_properties_obs(${CMAKE_PROJECT_NAME} PROPERTIES
-    FOLDER "plugins/${CMAKE_PROJECT_NAME}"
+target_link_libraries(obs-guide-overlay PRIVATE
+    ${LIBOBS_LIB}
+    ${OBS_FRONTEND_API_LIB}
+)
+
+set_target_properties(obs-guide-overlay PROPERTIES
     PREFIX ""
+    SUFFIX ".so"
 )
