@@ -1,0 +1,29 @@
+{
+  "name": "obs-guide-overlay",
+  "version": "1.0.1",
+  "author": "Denis",
+  "website": "",
+  "email": "",
+  "uiName": "Guide Overlay",
+  "dependencies": {
+    "obs-studio": {
+      "version": "31.0.3",
+      "repository": "https://github.com/obsproject/obs-studio",
+      "hash": "0000000000000000000000000000000000000000"
+    }
+  },
+  "platformConfig": {
+    "windows": {
+      "architectures": ["x64"],
+      "configurations": ["RelWithDebInfo"]
+    },
+    "macos": {
+      "architectures": ["x86_64", "arm64"],
+      "configurations": ["RelWithDebInfo"]
+    },
+    "linux": {
+      "architectures": ["x86_64"],
+      "configurations": ["RelWithDebInfo"]
+    }
+  }
+}
