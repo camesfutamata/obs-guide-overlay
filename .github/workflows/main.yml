@@ -23,14 +23,21 @@ jobs:
           mkdir -p obs-src
           tar -xf obs.tar.gz -C obs-src --strip-components=1
 
-      - name: Download OBS prebuilt libs
+      - name: Download OBS prebuilt libs and check structure
         run: |
           curl -L -o obs-deps.tar.xz https://github.com/obsproject/obs-deps/releases/download/2025-07-11/macos-deps-2025-07-11-arm64.tar.xz
           mkdir -p obs-deps
           tar -xf obs-deps.tar.xz -C obs-deps --strip-components=1
+          echo "=== lib folder ==="
+          find obs-deps -name "libobs*" 2>/dev/null || echo "libobs not found"
 
       - name: Configure with CMake
-        run: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 -DLIBOBS_INCLUDE_DIR="${{ github.workspace }}/obs-src/libobs" -DLIBOBS_LIB="${{ github.workspace }}/obs-deps/lib/libobs.dylib" -DOBS_FRONTEND_API_LIB="${{ github.workspace }}/obs-deps/lib/libobs-frontend-api.dylib" -S . -B build
+        run: |
+          LIBOBS=$(find obs-deps -name "libobs.*" | head -1)
+          LIBFE=$(find obs-deps -name "libobs-frontend-api.*" | head -1)
+          echo "Found libobs: $LIBOBS"
+          echo "Found frontend-api: $LIBFE"
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 -DLIBOBS_INCLUDE_DIR="${{ github.workspace }}/obs-src/libobs" -DLIBOBS_LIB="${{ github.workspace }}/$LIBOBS" -DOBS_FRONTEND_API_LIB="${{ github.workspace }}/$LIBFE" -S . -B build
 
       - name: Build
         run: cmake --build build --config RelWithDebInfo
