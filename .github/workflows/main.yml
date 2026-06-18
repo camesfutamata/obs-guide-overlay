@@ -7,37 +7,36 @@ on:
 
 jobs:
   build-macos:
-    name: Build macOS
+    name: Build macOS (arm64)
     runs-on: macos-14
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
 
-      - name: Setup OBS Plugin
-        uses: obsproject/obs-plugintemplate/.github/actions/setup-obs-plugin@v3
-        with:
-          workingDirectory: ${{ github.workspace }}
+      - name: Install OBS via Homebrew
+        run: |
+          brew install obs-studio cmake ninja
 
-      - name: Build Plugin
-        uses: obsproject/obs-plugintemplate/.github/actions/build-obs-plugin@v3
-        with:
-          workingDirectory: ${{ github.workspace }}
-          target: arm64
-          config: RelWithDebInfo
+      - name: Configure with CMake
+        run: |
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DLibObs_DIR="$(brew --prefix obs-studio)/lib/cmake/libobs" \
+            -S . -B build
 
-      - name: Package Plugin
-        uses: obsproject/obs-plugintemplate/.github/actions/package-obs-plugin@v3
-        with:
-          workingDirectory: ${{ github.workspace }}
-          target: arm64
-          config: RelWithDebInfo
+      - name: Build
+        run: cmake --build build
+
+      - name: Collect plugin
+        run: |
+          mkdir -p artifact
+          find build -name "*.so" -o -name "*.dylib" | xargs -I{} cp {} artifact/
+          cp -r data artifact/ 2>/dev/null || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: obs-guide-overlay-macos
-          path: ${{ github.workspace }}/_packages/*.pkg
-          if-no-files-found: warn
+          path: artifact/
