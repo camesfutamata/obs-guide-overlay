@@ -10,10 +10,16 @@ target_include_directories(obs-guide-overlay PRIVATE
     ${LIBOBS_INCLUDE_DIR}/../UI/obs-frontend-api
 )
 
-target_link_libraries(obs-guide-overlay PRIVATE
-    ${LIBOBS_LIB}
-    ${OBS_FRONTEND_API_LIB}
-)
+if(APPLE)
+    target_link_options(obs-guide-overlay PRIVATE
+        -undefined dynamic_lookup
+    )
+else()
+    target_link_libraries(obs-guide-overlay PRIVATE
+        ${LIBOBS_LIB}
+        ${OBS_FRONTEND_API_LIB}
+    )
+endif()
 
 set_target_properties(obs-guide-overlay PROPERTIES
     PREFIX ""
