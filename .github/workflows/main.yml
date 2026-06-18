@@ -31,11 +31,12 @@ jobs:
           mkdir -p obs-deps
           tar -xf obs-deps.tar.xz -C obs-deps --strip-components=1
 
-      - name: Configure with CMake
+     - name: Configure with CMake
         run: |
           cmake \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
             -DLIBOBS_INCLUDE_DIR="${{ github.workspace }}/obs-src/libobs" \
             -DLIBOBS_LIB="${{ github.workspace }}/obs-deps/lib/libobs.dylib" \
             -DOBS_FRONTEND_API_LIB="${{ github.workspace }}/obs-deps/lib/libobs-frontend-api.dylib" \
