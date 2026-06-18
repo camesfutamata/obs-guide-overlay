@@ -1,0 +1,43 @@
+name: Build Plugin
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    name: Build macOS
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup OBS Plugin
+        uses: obsproject/obs-plugintemplate/.github/actions/setup-obs-plugin@v3
+        with:
+          workingDirectory: ${{ github.workspace }}
+
+      - name: Build Plugin
+        uses: obsproject/obs-plugintemplate/.github/actions/build-obs-plugin@v3
+        with:
+          workingDirectory: ${{ github.workspace }}
+          target: arm64
+          config: RelWithDebInfo
+
+      - name: Package Plugin
+        uses: obsproject/obs-plugintemplate/.github/actions/package-obs-plugin@v3
+        with:
+          workingDirectory: ${{ github.workspace }}
+          target: arm64
+          config: RelWithDebInfo
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs-guide-overlay-macos
+          path: ${{ github.workspace }}/_packages/*.pkg
+          if-no-files-found: warn
